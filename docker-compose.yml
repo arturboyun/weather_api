@@ -1,0 +1,109 @@
+services:
+  api: &main_app
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    image: weather_api:${WEATHER_API_VERSION:-latest}
+    restart: always
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rmq:
+        condition: service_healthy
+    environment:
+      WEATHER_API_HOST: 0.0.0.0
+      WEATHER_API_DB_HOST: weather_api-db
+      WEATHER_API_DB_PORT: 5432
+      WEATHER_API_DB_USER: weather_api
+      WEATHER_API_DB_PASS: weather_api
+      WEATHER_API_DB_BASE: weather_api
+      WEATHER_API_RABBIT_HOST: weather_api-rmq
+      WEATHER_API_REDIS_HOST: weather_api-redis
+
+  taskiq-worker:
+    <<: *main_app
+    labels: []
+    env_file:
+      - .env
+    command:
+      - taskiq
+      - worker
+      - weather_api.tkq:broker
+
+  taskiq-scheduler:
+    <<: *main_app
+    labels: []
+    env_file:
+      - .env
+    command:
+      - taskiq
+      - scheduler
+      - weather_api.tkq:scheduler
+
+  db:
+    image: postgres:16.3-bullseye
+    hostname: weather_api-db
+    environment:
+      POSTGRES_PASSWORD: "weather_api"
+      POSTGRES_USER: "weather_api"
+      POSTGRES_DB: "weather_api"
+    volumes:
+      - weather_api-db-data:/var/lib/postgresql/data
+    restart: always
+    healthcheck:
+      test: pg_isready -U weather_api
+      interval: 2s
+      timeout: 3s
+      retries: 40
+
+  migrator:
+    image: weather_api:${WEATHER_API_VERSION:-latest}
+    restart: "no"
+    command: alembic upgrade head
+    env_file:
+      - .env
+    environment:
+      WEATHER_API_DB_HOST: weather_api-db
+      WEATHER_API_DB_PORT: 5432
+      WEATHER_API_DB_USER: weather_api
+      WEATHER_API_DB_PASS: weather_api
+      WEATHER_API_DB_BASE: weather_api
+    depends_on:
+      db:
+        condition: service_healthy
+
+  redis:
+    image: bitnami/redis:6.2.5
+    hostname: "weather_api-redis"
+    restart: always
+    environment:
+      ALLOW_EMPTY_PASSWORD: "yes"
+    healthcheck:
+      test: redis-cli ping
+      interval: 1s
+      timeout: 3s
+      retries: 50
+
+  rmq:
+    image: rabbitmq:3.9.16-alpine
+    hostname: "weather_api-rmq"
+    restart: always
+    environment:
+      RABBITMQ_DEFAULT_USER: "guest"
+      RABBITMQ_DEFAULT_PASS: "guest"
+      RABBITMQ_DEFAULT_VHOST: "/"
+    healthcheck:
+      test: rabbitmq-diagnostics check_running -q
+      interval: 3s
+      timeout: 3s
+      retries: 50
+
+
+
+volumes:
+  weather_api-db-data:
+    name: weather_api-db-data

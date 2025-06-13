@@ -1,0 +1,28 @@
+services:
+  api:
+    ports:
+      # Exposes application port.
+    - "8000:8000"
+    build:
+      context: .
+    volumes:
+      # Adds current directory as volume.
+    - .:/app/src/
+    environment:
+      # Enables autoreload.
+      WEATHER_API_RELOAD: "True"
+
+  db:
+    ports:
+      # Exposes database port.
+      - "5432:5432"
+
+  taskiq-worker:
+    volumes:
+      # Adds current directory as volume.
+      - .:/app/src/
+    command:
+      - taskiq
+      - worker
+      - weather_api.tkq:broker
+      - --reload
