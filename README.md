@@ -2,7 +2,10 @@
 
 ## Setup
 
-First create `.env` file from `.env.dist`
+First create `.env` file from `.env.dist` with:
+```bash
+cat .env.dist >> .env
+```
 
 **Don't forget fill the WEATHER_API_X_TOKEN**
 
