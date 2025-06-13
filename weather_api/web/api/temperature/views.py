@@ -1,4 +1,5 @@
 from datetime import date
+from logging import getLogger
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query
@@ -8,6 +9,7 @@ from weather_api.settings import settings
 from weather_api.web.api.temperature.schema import TemperatureSchema
 
 router = APIRouter()
+logger = getLogger(__name__)
 
 
 @router.get("/", response_model=list[TemperatureSchema])
@@ -39,3 +41,6 @@ async def get_temperature(
         ]
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
+    except Exception as e:
+        logger.exception("An error occurred while fetching temperature data")
+        raise HTTPException(status_code=500, detail="Internal Server Error") from e
