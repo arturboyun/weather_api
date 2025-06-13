@@ -39,5 +39,5 @@ jobs:
         with:
           version: "2.28.0"
       - name: run tests
-        run: docker-compose run --rm api pytest -vv
+        run: docker-compose run -e WEATHER_API_X_TOKEN=token_for_tests --rm api pytest -vv
 
