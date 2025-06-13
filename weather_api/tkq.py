@@ -3,20 +3,18 @@ from typing import Annotated, Any
 
 import httpx
 import taskiq_fastapi
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import Depends
 from taskiq import (
     AsyncBroker,
     AsyncResultBackend,
     InMemoryBroker,
-    TaskiqDepends,
     TaskiqScheduler,
 )
 from taskiq.schedule_sources import LabelScheduleSource
 from taskiq_aio_pika import AioPikaBroker
 from taskiq_redis import RedisAsyncResultBackend
 
-from weather_api.db.dependencies import get_db_session
-from weather_api.db.models.temperature import Temperature
+from weather_api.db.dao.temperature_dao import TemperatureDAO
 from weather_api.settings import settings
 
 result_backend: AsyncResultBackend[Any] = RedisAsyncResultBackend(
@@ -42,9 +40,9 @@ taskiq_fastapi.init(
 logger = logging.getLogger(__name__)
 
 
-@broker.task(schedule=[{"cron": "0 * * * *"}])
+@broker.task(schedule=[{"cron": "* * * * *"}])
 async def log_temperature(
-    session: Annotated[AsyncSession, TaskiqDepends(get_db_session)],
+    temperature_dao: Annotated[TemperatureDAO, Depends()],
 ) -> None:
     """Fetch current temp for CITY using Open-Meteo API and persist to DB."""
 
@@ -117,11 +115,6 @@ async def log_temperature(
         logger.debug("Response data: %s", weather_data)
         return
 
-    record = Temperature(
-        city=city_name,
-        temperature=temp_c,
-    )
-    session.add(record)
-    await session.commit()
+    await temperature_dao.create_temperature(city=city_name, temperature=temp_c)
 
     logger.info("Stored temperature %s °C for %s", temp_c, city_name)

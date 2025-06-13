@@ -33,3 +33,14 @@ class TemperatureDAO:
         )
         result = await self.session.execute(stmt)
         return result.scalars().all()
+
+    async def create_temperature(self: Self, city: str, temperature: float) -> None:
+        """
+        Creates a new temperature record for a given city.
+
+        :param city: The name of the city.
+        :param temperature: The temperature in Celsius.
+        :returns: None
+        """
+        self.session.add(Temperature(city=city, temperature=temperature))
+        await self.session.commit()
