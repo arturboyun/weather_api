@@ -2,12 +2,12 @@ services:
   api:
     ports:
       # Exposes application port.
-    - "8000:8000"
+      - "8000:8000"
     build:
       context: .
     volumes:
       # Adds current directory as volume.
-    - .:/app/src/
+      - .:/app/src/
     environment:
       # Enables autoreload.
       WEATHER_API_RELOAD: "True"
