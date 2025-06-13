@@ -20,6 +20,13 @@ openssl rand -base64 32
 You can start the project with docker using this command:
 
 ```bash
+docker-compose up --build
+```
+
+If you want to develop in docker with autoreload and exposed ports add `-f deploy/docker-compose.dev.yml` to your docker command.
+Like this:
+
+```bash
 docker-compose -f docker-compose.yml -f deploy/docker-compose.dev.yml --project-directory . up --build
 ```
 
