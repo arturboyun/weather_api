@@ -28,3 +28,6 @@ For develop in docker:
 ```bash
 docker-compose -f docker-compose.yml -f deploy/docker-compose.dev.yml --project-directory . up --build
 ```
+
+## Swagger
+http://localhost:8000/api/docs/
